@@ -1,17 +1,24 @@
 import os
 import time
 import commands
-
-__author__ = 'Basti_Schr'
+import math
+__author__ = 'Basti-Schr'
 
 # Source: https://www.arduino.cc/en/Tutorial/ColorCrossfader
 # transformed to Python language for the Raspberry Pi
 
 
-# Output
+# Output pins
 redPin = 22
 grnPin = 17
 bluPin = 24
+
+# static values
+wait = 0.001    # 10 ms delay
+hold = 0        # optional hold after completed
+gamma = math.e  # set a gamma correction to the brightness. 1 turns off
+DEBUG = True    # set Debug ON or OFF
+loopCount = 100  # how many times should DEBUG report
 
 # Color arrays in percent
 black = [0,0,0]
@@ -38,11 +45,6 @@ grnVal = getVal(grnPin)
 bluVal = getVal(bluPin)
 
 
-wait = 0.001    # 10 ms delay
-hold = 0        # optional hold after completed
-DEBUG = False    # set Debug ON or OFF
-loopCount = 60  # how many times should DEBUG report
-
 # init color variables
 prevR = redVal
 prevG = grnVal
@@ -55,8 +57,17 @@ if DEBUG:
 def calculateStep(prevValue, endValue):
     step = endValue - prevValue # overall gap
     if step != 0:
-        step = 1020.0 / step   # 1020 / step
+        step = 1020.0 / step
     return step
+
+def gamma_correction(before):
+
+    percent = (before / 255.0)      # turns into value form 0 - 1
+    after_perc = percent ** gamma   # gamma correction with the anti function of the eye's perception curve
+    after = int(after_perc * 255)   # turns back to 0 - 255 value
+
+    return after
+
 
 def calculateVal(step, val, i):
     # print(int(i%step))
@@ -72,12 +83,12 @@ def calculateVal(step, val, i):
         val = 255
     elif val < 0:
         val = 0
-    if DEBUG:
-        print(val)
+
     return val
 
 
 def analogWrite(pin, brightness):
+    brightness = gamma_correction(brightness)
     os.system("pigs p "+str(pin)+" "+str(brightness))
 
 
@@ -85,7 +96,6 @@ def analogWrite(pin, brightness):
 def crossFade(color):
     # convert to 0 - 255
     print(color)
-    print(color[1])
     R = (int(color[0]) * 255) * 0.01
     G = (int(color[1]) * 255) * 0.01
     B = (int(color[2]) * 255) * 0.01
@@ -107,8 +117,6 @@ def crossFade(color):
     if DEBUG:
         print("Step size R G B: ")
         print(stepR, stepG, stepB)
-        print("Values R G B")
-        print(redVal, grnVal, bluVal)
 
     n = 0
     while n <= 1020:
@@ -129,9 +137,10 @@ def crossFade(color):
                 print("R"+str(redVal))
                 print("G"+str(grnVal))
                 print("B"+str(bluVal))
-    
-    print("Finish: current Vals: R G B")
-    print(redVal, grnVal, bluVal)
+    if DEBUG:
+        print("Finish: current Vals: R G B")
+        print(redVal, grnVal, bluVal)
+
     # update Vals
     prevR = redVal
     prevG = grnVal
@@ -140,12 +149,8 @@ def crossFade(color):
 
 
 
-##############
-# write here the color in, whitch it should be
-
+############## # write here the color in, witch it should be
 
 crossFade(red)
-crossFade(green)
 crossFade(blue)
-crossFade(white)
-crossFade(black)
+crossFade(green)
